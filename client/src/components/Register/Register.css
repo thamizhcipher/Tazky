@@ -1,0 +1,15 @@
+.register-container
+{
+    margin-top: 2rem;
+    max-width: 30rem;
+    border: 2px solid grey;
+    border-radius: 10px;
+    padding: 2%;
+}
+
+.login_text
+{
+    text-decoration: none;
+    text-align: center;
+    margin-top: 2rem;
+}

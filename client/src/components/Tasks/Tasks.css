@@ -1,0 +1,52 @@
+.task-container
+{
+    margin-top: 5rem;
+    margin-left: 29rem;
+    border: 5px solid silver;
+    border-radius: .75rem;
+    max-width: 38%;
+    padding: 5%;
+}
+
+.header
+{
+    margin-top: 5rem;
+    font-weight: bold;
+}
+
+.task-list
+{
+    margin-top: 3rem;
+}
+
+
+.del-btn > button
+{
+    margin-left: 1rem;
+}
+
+.logout-btn
+{
+    position: absolute;
+    right: 1rem;
+    top: 1rem;
+    color: white;
+    font-weight: 500
+}
+
+
+.each-task{
+    display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+ 
+}
+
+.task-text
+{
+    flex: 1;
+    font-weight: bold;
+    font-size: 1.05rem;
+}
+
