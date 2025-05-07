@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import axios from 'axios'
+import axios from '../../axiosInstance'
 import './Tasks.css'
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
@@ -19,9 +19,7 @@ const Tasks = () => {
     const fetchTasks= async ()=>{
         try 
         {
-            const res= await axios.get("http://localhost:4567/tasks",{
-                withCredentials:true
-            })    
+            const res= await axios.get("/tasks")    
            console.log(res.data.tasks);
            
             setTasks(res.data.tasks);
@@ -35,12 +33,7 @@ const Tasks = () => {
     const addTask= async()=>{
         try 
         {
-            const res= await axios.post("http://localhost:4567/tasks",{title:newTask},{
-                headers:{
-                    "Content-Type":"application/json"
-                },
-                withCredentials: true
-            }) 
+            const res= await axios.post("/tasks",{title:newTask}) 
             
             if(res.status===200)
             {
@@ -59,8 +52,7 @@ const Tasks = () => {
 
     const deleteTask= async (taskId)=>{
         try {
-            await axios.delete(`http://localhost:4567/tasks/${taskId}`,
-                {withCredentials:true})
+            await axios.delete(`/tasks/${taskId}`)
             fetchTasks();
             alert("task deleted successfully")
         } catch (error) {
@@ -70,18 +62,17 @@ const Tasks = () => {
     }
 
     const markCompleted = async (taskId)=>{
-        try {;
-            await axios.put(`http://localhost:4567/tasks/${taskId}`,{},{withCredentials:true})
+        try {
+            await axios.put(`/tasks/${taskId}`)
             fetchTasks()
             alert("task marked as completed")
         } catch (error) {
             console.log(error);
-            
         }
     }
 
     const handleLogout=async()=>{
-        await axios.post("http://localhost:4567/logout",{},{withCredentials:true})
+        await axios.post("/logout")
         navigate("/")
 
     }
@@ -130,11 +121,11 @@ const Tasks = () => {
                         tasks.length >0 ? (
                             tasks.map((task)=>(
                                 <li key={task.id} className='each-task'>
-                                    <span className='task-text' style={{textDecoration: task.completed ? 'line-through':'none'}}>
+                                    <span className='task-text' style={{textDecoration: task.completed === 't' ? 'line-through':'none'}}>
                                         {task.task}
                                     </span>
                                    <span className='complete-btn'>
-                                        {!task.completed && (
+                                        {task.completed === 'f' && (
                                             <Button  variant="success" onClick={()=>markCompleted(task.id)}>Done</Button>
                                         )}
                                    </span>

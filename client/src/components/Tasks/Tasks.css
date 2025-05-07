@@ -50,3 +50,21 @@
     font-size: 1.05rem;
 }
 
+
+@media screen and (max-width:769px) 
+{
+    .task-container
+    {
+        margin: 3rem auto;
+        max-width: max-content;
+    }    
+}
+
+@media  screen and (max-width:630px) 
+{
+    .task-container
+    {
+        margin: 3rem auto;
+        max-width: 20rem;
+    }    
+}

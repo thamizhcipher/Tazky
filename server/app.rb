@@ -1,14 +1,15 @@
 require 'sinatra'
 require 'sinatra/cross_origin'
 require 'bcrypt'
-require 'sqlite3'
+# require 'sqlite3'
 require 'json'
 require 'rack/cors'
 require 'rack/session'
 require 'jwt'
-require 'dotenv'
+require 'dotenv/load'
+require 'pg'
 
-Dotenv.load
+# Dotenv.load
 
 use Rack::Cors do
     allow do
@@ -34,40 +35,86 @@ before do
     content_type :json
 end
 
+set :bind, '0.0.0.0'
+
 #JWT SECRET KEY
 SECRET_KEY = ENV['SECRET_KEY']
 
 #SQlite connection
 
-DB = SQLite3::Database.new File.expand_path('users.db', __dir__)
-DB.results_as_hash = true
+# DB.results_as_hash = true
+# 
+
+
+ 
+#PG CONNECTION
+
+# DB=PG.connect(
+#   dbname: 'tazky',
+#   user: 'root',
+#   password: 'root',
+#   host: 'localhost'
+# )
+
+DB=PG.connect(
+  dbname:ENV['DB_NAME'],
+  user:ENV['DB_USER'],
+  password:ENV['PASSWORD'],
+  host:ENV['HOST'],
+  port:ENV['PORT'] || 5432
+)
+
+
 
 #create user table if it doesn't exist
 
-begin
-    DB.execute <<-SQL
-   CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT ,
-    email TEXT UNIQUE,
-    password_digest TEXT
- );
- SQL
-rescue => e
-    puts e
-end
+# begin
+#     DB.execute <<-SQL
+#    CREATE TABLE IF NOT EXISTS users (
+#     id INTEGER PRIMARY KEY AUTOINCREMENT,
+#     username TEXT ,
+#     email TEXT UNIQUE,
+#     password_digest TEXT
+#  );
+#  SQL
+# rescue => e
+#     puts e
+# end
 
-#create tasks table
+# #create tasks table
 
-DB.execute <<-SQL
-  CREATE TABLE IF NOT EXISTS tasks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER,
-    task TEXT,
-    completed BOOLEAN DEFAULT 0,
-    FOREIGN KEY(user_id) REFERENCES users(id)
+# DB.execute <<-SQL
+#   CREATE TABLE IF NOT EXISTS tasks (
+#     id INTEGER PRIMARY KEY AUTOINCREMENT,
+#     user_id INTEGER,
+#     task TEXT,
+#     completed BOOLEAN DEFAULT 0,
+#     FOREIGN KEY(user_id) REFERENCES users(id)
+#   );
+# SQL
+
+
+#CREATE USER TABLE IF NOT EXIST IN POSTGRESQL DB
+
+DB.exec <<-PG
+  CREATE TABLE IF NOT EXISTS users(
+  id SERIAL PRIMARY KEY,
+  username TEXT,
+  email TEXT UNIQUE,
+  password_digest TEXT
   );
-SQL
+PG
+
+#CREATE TASK TABLE IF NOT EXIST IN POSTGRESQL DB
+
+DB.exec <<-PG
+  CREATE TABLE IF NOT EXISTS tasks(
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id),
+  task TEXT,
+  completed BOOLEAN DEFAULT FALSE
+  );
+PG
 
 
 #HELPER-AUTHENTICATOR
@@ -91,7 +138,17 @@ helpers do
     end
   end
   
+#Email Validation
 
+def validateEmail?(email)
+  !!(email =~ /^[^\s@]+@[^\s@]+\.[^\s@]+$/)
+end
+
+#Password Validation  
+
+def validatePassword?(password)
+    !!(password =~ /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/)
+end
 
 #ROUTES SECTION
 
@@ -110,22 +167,30 @@ post '/register' do
     # puts "inside register route"
     data = JSON.parse(request.body.read)
     user = data['name']
-    # puts user
-    email = data['email']
+    email = data['email'].downcase 
     password = data['password']
     password_digest = BCrypt::Password.create(password)
+
+    #Validate password and email
+    
+    unless validateEmail?(email)
+        halt 400, {error: "Invalid email format"}.to_json      
+    end
+    unless validatePassword?(password)
+        halt 400, {error: "Password must be at least 8 characters long and include a number and a special character and one uppercase letter"}.to_json      
+    end
 
     #insert into DB
 
     begin
-      exisiting_user = DB.execute("SELECT * FROM users WHERE email = ?",[email]).first
+      exisiting_user = DB.exec_params("SELECT * FROM users WHERE email = $1",[email])
 
-      if exisiting_user
+      if exisiting_user.ntuples > 0
           return  {status:401, message:"user already exists"}.to_json 
         
       end
 
-      DB.execute("INSERT INTO users (username,email,password_digest) VALUES (?, ?, ?)", [user,email,password_digest])
+      DB.exec_params("INSERT INTO users (username,email,password_digest) VALUES ($1, $2, $3)", [user,email,password_digest])
       { status: "success", message: "user registered successfully"}.to_json
     rescue => e
         puts "Error occured #{e}"
@@ -140,13 +205,12 @@ end
 
 post '/login' do
     data = JSON.parse(request.body.read)
-    email = data['email']
+    email = data['email'].downcase
     password = data['password']
     
 
     begin
-        puts "Using DB at: #{File.expand_path('users.db', __dir__)}"
-        user = DB.execute("SELECT * FROM users WHERE email = ?",[email]).first
+        user = DB.exec_params("SELECT * FROM users WHERE email = $1",[email]).first
      
     rescue => e
         puts "error in login #{e}" 
@@ -161,7 +225,7 @@ post '/login' do
                 user_id: user['id'],
                 expiry:exp,
                 iat:Time.now.to_i,
-                iss: "taks-manager"
+                iss: "tasks-manager"
             }
 
             token = JWT.encode(payload,SECRET_KEY,'HS256')
@@ -189,9 +253,10 @@ end
 
 
 get '/tasks' do
-    puts "inside tasks route"
     user_id = authenticate!
-    tasks = DB.execute("SELECT * FROM tasks WHERE user_id = ?",[user_id])
+    op = DB.exec_params("SELECT * FROM tasks WHERE user_id = $1",[user_id])
+    tasks= op.map{|row| row} 
+      
     {tasks: tasks}.to_json
     
   end
@@ -203,7 +268,7 @@ get '/tasks' do
     data = JSON.parse(request.body.read)
     task = data["title"]
   
-    DB.execute("INSERT INTO tasks (user_id, task, completed) VALUES (?, ?, ?)", [user_id, task, 0])
+    DB.exec_params("INSERT INTO tasks (user_id, task, completed) VALUES ($1, $2, $3)", [user_id, task, false])
 
     {
       message:"task added successfully"
@@ -218,7 +283,7 @@ get '/tasks' do
     task_id = params["id"]
   
     begin
-      DB.execute("UPDATE tasks SET completed = ? WHERE id = ? AND user_id = ?",[1,task_id,user_id])
+      DB.exec_params("UPDATE tasks SET completed = $1 WHERE id = $2 AND user_id = $3",[1,task_id,user_id])
       {message:"task added successfully"}.to_json
   
     rescue => e
@@ -235,7 +300,7 @@ get '/tasks' do
     task_id = params["id"]
   
     begin
-      DB.execute("DELETE FROM tasks WHERE id = ? AND user_id = ?",[task_id,user_id])
+      DB.exec_params("DELETE FROM tasks WHERE id = $1 AND user_id = $2",[task_id,user_id])
       {message:"Task deleted successfully"}.to_json
   
     rescue => e

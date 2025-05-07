@@ -1,4 +1,4 @@
-import {render, screen, fireEvent, waitFor} from '@testing-library/react'
+import {render, screen} from '@testing-library/react'
 import Tasks from './components/Tasks/Tasks'
 import axios from 'axios'
 import { MemoryRouter } from 'react-router-dom';
@@ -24,21 +24,14 @@ const dummyData = [
 describe('fetching the task list', () => { 
     it("should render the task list", async()=>{
 
-        
-        // axios.get.mockImplementation((url) => {
-        //     if (url === "http://localhost:4567/verify") {
-        //       return Promise.resolve({ data: { status: 200 } });
-        //     } else if (url === "http://localhost:4567/tasks") {
-        //       return Promise.resolve({ data: dummyData });
-        //     }
-        //   });
+        axios.get.mockResolvedValueOnce({ data: { tasks: dummyData } })
+
         render (
             <MemoryRouter>
                 <Tasks />
             </MemoryRouter>
         );
-        axios.get.mockResolvedValueOnce({ data: { tasks: {dummyData} } })
-        screen.debug()
+        
         expect(await screen.findByText("new task")).toBeInTheDocument()
     } )
  })

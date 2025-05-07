@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react'
-import {Navigate,Outlet, useNavigate} from 'react-router-dom'
+import {Navigate,Outlet} from 'react-router-dom'
 import axios from 'axios'
 
 const PrivateRoute = () => {
     const[auth,setAuth]=useState(null);
-    const navigate=useNavigate();
+    
     useEffect(()=>{
         const checkAuth = async()=>{
             try {

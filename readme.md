@@ -20,7 +20,7 @@ being stored in the cookie.
         1. ruby
         2. Node.js 
         3. npm
-        4. SQLite
+        4. Postgres
 
     Frontend:
         cd client/

@@ -6,41 +6,47 @@ GEM
     dotenv (3.1.8)
     jwt (2.10.1)
       base64
-    multi_json (1.15.0)
+    mustermann (2.0.2)
+      ruby2_keywords (~> 0.0.1)
     nio4r (2.7.4)
+    pg (1.5.9)
     puma (6.6.0)
       nio4r (~> 2.0)
-    rack (3.1.13)
+    rack (2.2.13)
     rack-cors (2.0.2)
       rack (>= 2.0.0)
-    rack-session (2.1.0)
-      base64 (>= 0.1.0)
-      rack (>= 3.0.0)
-    rackup (2.2.1)
-      rack (>= 3)
-    sinatra (1.0)
-      rack (>= 1.0)
+    rack-protection (2.2.4)
+      rack
+    rack-session (1.0.2)
+      rack (< 3)
+    rackup (1.0.1)
+      rack (< 3)
+      webrick
+    ruby2_keywords (0.0.5)
+    sinatra (2.2.4)
+      mustermann (~> 2.0)
+      rack (~> 2.2)
+      rack-protection (= 2.2.4)
+      tilt (~> 2.0)
     sinatra-cross_origin (0.4.0)
-    sinatra-json (0.1.0)
-      multi_json (~> 1.0)
-      sinatra (~> 1.0)
-    sqlite3 (2.6.0-x86_64-linux-gnu)
+    tilt (2.6.0)
+    webrick (1.9.1)
 
 PLATFORMS
+  ruby
   x86_64-linux-gnu
 
 DEPENDENCIES
   bcrypt
   dotenv
   jwt
-  puma (~> 6.6)
+  pg
+  puma
   rack-cors
   rack-session
-  rackup (~> 2.2)
+  rackup
   sinatra
   sinatra-cross_origin
-  sinatra-json
-  sqlite3
 
 BUNDLED WITH
    2.6.8
